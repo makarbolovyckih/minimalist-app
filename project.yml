@@ -24,6 +24,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.blankclone.app
         PRODUCT_NAME: Blank
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) APP_TARGET"
     dependencies:
       - target: BlankWidget
   BlankWidget:
