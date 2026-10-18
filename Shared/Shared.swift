@@ -18,6 +18,11 @@ struct CatalogApp: Identifiable, Hashable {
     var id: String { name }
 }
 
+final class LaunchState: ObservableObject {
+    static let shared = LaunchState()
+    @Published var hiding = false
+}
+
 // Third-party apps: the widget launches Blank, which then opens the target app (custom schemes can't be opened straight from a widget).
 @available(iOS 17.0, *)
 struct LaunchIntent: AppIntent {
@@ -29,8 +34,11 @@ struct LaunchIntent: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult {
         #if APP_TARGET
-        try? await Task.sleep(nanoseconds: 300_000_000)
+        LaunchState.shared.hiding = true
+        try? await Task.sleep(nanoseconds: 150_000_000)
         _ = await UIApplication.shared.open(url, options: [:])
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        LaunchState.shared.hiding = false
         #endif
         return .result()
     }
@@ -44,9 +52,9 @@ enum Catalog {
         ("Books", "ibooks://"), ("Calendar", "calshow://"), ("Contacts", "contacts://"), ("FaceTime", "facetime:"),
         ("Files", "shareddocuments://"), ("Find My", "findmy://"), ("Fitness", "fitness://"), ("Freeform", "freeform://"),
         ("Health", "x-apple-health://"), ("Home", "x-hm://"), ("Magnifier", "magnifier://"), ("Mail", "message://"),
-        ("Maps", "maps://"), ("Measure", "measure://"), ("Music", "music://"),
+        ("Maps", "maps://"), ("Measure", "measure://"), ("Messages", "sms:"), ("Music", "music://"),
         ("Notes", "mobilenotes://"), ("Photos", "photos-redirect://"), ("Podcasts", "podcasts://"),
-        ("Reminders", "x-apple-reminderkit://"), ("Settings", "App-Prefs:"),
+        ("Reminders", "x-apple-reminderkit://"), ("Safari", "x-web-search://"), ("Settings", "App-Prefs:"),
         ("Shortcuts", "shortcuts://"), ("Stocks", "stocks://"), ("TV", "videos://"), ("Voice Memos", "voicememos://"),
         ("Wallet", "shoebox://"), ("Weather", "weather://"), ("App Store", "itms-apps://"),
         // Third party
@@ -67,10 +75,9 @@ enum Catalog {
         ("YouTube Music", "youtubemusic://"), ("Zoom", "zoomus://"),
     ].map { CatalogApp(name: $0.0, url: $0.1) }
 
-    // Apple gives these no "just open the app" link (Messages and Safari links start a new message / tab),
-    // so each runs a Shortcut with the "Open App" action, named exactly like the app.
+    // Apple gives these no link at all, so each runs a Shortcut with the "Open App" action, named exactly like the app.
     private static let viaShortcut: [CatalogApp] =
-        ["Calculator", "Camera", "Clock", "Messages", "Phone", "Safari"].map {
+        ["Calculator", "Camera", "Clock", "Phone"].map {
             CatalogApp(name: $0, url: shortcutURL($0), shortcut: true)
         }
 
@@ -80,7 +87,7 @@ enum Catalog {
 
     // Schemes handled by the system itself (these open fine through OpenURLIntent).
     static let systemSchemes: Set<String> = [
-        "http", "https", "sms", "tel", "mailto", "message", "maps", "music", "facetime", "x-web-search",
+        "http", "https", "tel", "mailto", "message", "maps", "music", "facetime", "x-web-search",
         "photos-redirect", "mobilenotes", "calshow", "x-apple-reminderkit", "shareddocuments", "shoebox",
         "x-apple-health", "podcasts", "itms-apps", "shortcuts", "app-prefs", "findmy", "ibooks", "videos",
         "stocks", "x-hm", "fitness", "voicememos", "measure", "magnifier", "freeform", "weather", "contacts",
