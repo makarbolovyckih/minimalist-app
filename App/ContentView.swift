@@ -7,12 +7,17 @@ struct ContentView: View {
     @State private var adding = false
     @State private var bg = Color(hex: Store.bgHex)
     @State private var message: String?
+    @ObservedObject private var launch = LaunchState.shared
 
     var xlSupported: String {
         if #available(iOS 27, *) { return "yes" } else { return "no (needs iOS 27)" }
     }
 
     var body: some View {
+        content.overlay { if launch.hiding { Color.black.ignoresSafeArea() } }
+    }
+
+    var content: some View {
         NavigationStack {
             List {
                 Section {
