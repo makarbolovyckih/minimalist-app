@@ -133,9 +133,13 @@ struct AddView: View {
 
                 if mode == 0 {
                     Picker("App", selection: $app) {
-                        ForEach(Catalog.apps) { Text($0.name).tag($0) }
+                        ForEach(Catalog.apps) { Text($0.shortcut ? "\($0.name) (via Shortcut)" : $0.name).tag($0) }
                     }
                     .pickerStyle(.menu)
+                    if app.shortcut {
+                        Text("Apple gives \(app.name) no plain 'open' link. In the Shortcuts app, make a shortcut named exactly \"\(app.name)\" with the 'Open App' action set to \(app.name). The widget runs it.")
+                            .font(.footnote)
+                    }
                 } else if mode == 1 {
                     TextField("Shortcut name (exact)", text: $shortcut)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
