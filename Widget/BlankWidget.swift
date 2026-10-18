@@ -54,7 +54,10 @@ struct LinkEntry: TimelineEntry {
 }
 
 struct Provider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> LinkEntry { LinkEntry(date: .now, items: [], bg: Store.bgHex) }
+    func placeholder(in context: Context) -> LinkEntry {
+        let sample = Catalog.apps.filter { Catalog.defaults.contains($0.name) }.map { LinkItem(name: $0.name, url: $0.url) }
+        return LinkEntry(date: .now, items: sample, bg: "000000")
+    }
     func snapshot(for c: LinksIntent, in context: Context) async -> LinkEntry { entry(c) }
     func timeline(for c: LinksIntent, in context: Context) async -> Timeline<LinkEntry> {
         Timeline(entries: [entry(c)], policy: .never)
@@ -127,7 +130,7 @@ struct BlankWidget: Widget {
     }
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: "BlankWidgetXL", intent: LinksIntent.self, provider: Provider()) {
+        AppIntentConfiguration(kind: "BlankWidget", intent: LinksIntent.self, provider: Provider()) {
             BlankWidgetView(entry: $0)
         }
         .configurationDisplayName("Blank")
