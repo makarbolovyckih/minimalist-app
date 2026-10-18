@@ -35,6 +35,18 @@ struct LinksIntent: WidgetConfigurationIntent {
     @Parameter(title: "App 10") var a10: AppChoice?
 }
 
+// Opens a URL from a widget tap (iOS 18+). More reliable than Link for custom app URLs.
+@available(iOS 18.0, *)
+struct OpenLinkIntent: AppIntent {
+    static var title: LocalizedStringResource = "Open"
+    @Parameter(title: "URL") var url: URL
+    init() {}
+    init(url: URL) { self.url = url }
+    func perform() async throws -> some IntentResult & OpensIntent {
+        .result(opensIntent: OpenURLIntent(url))
+    }
+}
+
 struct LinkEntry: TimelineEntry {
     let date: Date
     let items: [LinkItem]
@@ -76,17 +88,24 @@ struct BlankWidgetView: View {
 
     var body: some View {
         VStack(spacing: size * 0.7) {
-            ForEach(entry.items) { item in
-                if let url = item.link {
-                    Link(destination: url) { label(item.name) }
-                } else {
-                    label(item.name)
-                }
-            }
+            ForEach(entry.items) { item in tap(item) }
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .containerBackground(for: .widget) { Color.clear }
+    }
+
+    @ViewBuilder func tap(_ item: LinkItem) -> some View {
+        if let url = item.link {
+            if #available(iOS 18, *) {
+                Button(intent: OpenLinkIntent(url: url)) { label(item.name) }
+                    .buttonStyle(.plain)
+            } else {
+                Link(destination: url) { label(item.name) }
+            }
+        } else {
+            label(item.name)
+        }
     }
 
     func label(_ s: String) -> some View {
