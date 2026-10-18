@@ -13,6 +13,14 @@ struct ContentView: View {
         if #available(iOS 27, *) { return "yes" } else { return "no (needs iOS 27)" }
     }
 
+    var toolchain: String {
+        #if compiler(>=6.4)
+        return "Xcode 27 or newer"
+        #else
+        return "older than Xcode 27 (no 4x6 widget)"
+        #endif
+    }
+
     var body: some View {
         content.overlay { if launch.hiding { Color.black.ignoresSafeArea() } }
     }
@@ -66,7 +74,8 @@ struct ContentView: View {
 
                 Section("Debug") {
                     Text("iOS \(UIDevice.current.systemVersion)")
-                    Text("Built with extra-large widget: \(xlSupported)")
+                    Text("Running on iOS 27: \(xlSupported)")
+                    Text("Built with: \(toolchain)")
                 }
             }
             .navigationTitle("Blank")
