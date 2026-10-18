@@ -35,8 +35,7 @@ struct LinksIntent: WidgetConfigurationIntent {
     @Parameter(title: "App 10") var a10: AppChoice?
 }
 
-// System URLs (and https): OpenURLIntent. Other apps' custom schemes aren't supported by OpenURLIntent,
-// so those go through SwiftUI's openURL instead.
+// System URLs (and https): OpenURLIntent. Other apps' custom schemes go through LaunchIntent instead.
 @available(iOS 18.0, *)
 struct OpenLinkIntent: AppIntent {
     static var title: LocalizedStringResource = "Open"
@@ -45,19 +44,6 @@ struct OpenLinkIntent: AppIntent {
     init(url: URL) { self.url = url }
     func perform() async throws -> some IntentResult & OpensIntent {
         .result(opensIntent: OpenURLIntent(url))
-    }
-}
-
-@available(iOS 18.0, *)
-struct OpenCustomIntent: AppIntent {
-    static var title: LocalizedStringResource = "Open app"
-    @Parameter(title: "URL") var url: URL
-    init() {}
-    init(url: URL) { self.url = url }
-    @MainActor
-    func perform() async throws -> some IntentResult {
-        EnvironmentValues().openURL(url)
-        return .result()
     }
 }
 
@@ -112,12 +98,10 @@ struct BlankWidgetView: View {
 
     @ViewBuilder func tap(_ item: LinkItem) -> some View {
         if let url = item.link {
-            if #available(iOS 18, *) {
-                if Catalog.isSystem(url) {
-                    Button(intent: OpenLinkIntent(url: url)) { label(item.name) }.buttonStyle(.plain)
-                } else {
-                    Button(intent: OpenCustomIntent(url: url)) { label(item.name) }.buttonStyle(.plain)
-                }
+            if !Catalog.isSystem(url) {
+                Button(intent: LaunchIntent(url: url)) { label(item.name) }.buttonStyle(.plain)
+            } else if #available(iOS 18, *) {
+                Button(intent: OpenLinkIntent(url: url)) { label(item.name) }.buttonStyle(.plain)
             } else {
                 Link(destination: url) { label(item.name) }
             }
