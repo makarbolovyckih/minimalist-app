@@ -127,7 +127,7 @@ struct BlankWidget: Widget {
     }
 
     var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: "BlankWidget", intent: LinksIntent.self, provider: Provider()) {
+        AppIntentConfiguration(kind: "BlankWidgetXL", intent: LinksIntent.self, provider: Provider()) {
             BlankWidgetView(entry: $0)
         }
         .configurationDisplayName("Blank")
@@ -136,7 +136,23 @@ struct BlankWidget: Widget {
     }
 }
 
+// A separate widget that ONLY offers the iOS 27 4x6 size, so it gets its own entry in the widget gallery.
+@available(iOS 27.0, *)
+struct BlankXLWidget: Widget {
+    var body: some WidgetConfiguration {
+        AppIntentConfiguration(kind: "BlankXLOnly", intent: LinksIntent.self, provider: Provider()) {
+            BlankWidgetView(entry: $0)
+        }
+        .configurationDisplayName("Blank XL")
+        .description("Full-page 4x6 text launcher.")
+        .supportedFamilies([.systemExtraLargePortrait])
+    }
+}
+
 @main
 struct BlankWidgetBundle: WidgetBundle {
-    var body: some Widget { BlankWidget() }
+    var body: some Widget {
+        BlankWidget()
+        if #available(iOS 27, *) { BlankXLWidget() }
+    }
 }
