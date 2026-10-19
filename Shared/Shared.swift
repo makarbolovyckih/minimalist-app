@@ -46,39 +46,42 @@ struct LaunchIntent: AppIntent {
 
 enum Catalog {
     // iOS gives apps NO way to list what's installed, so this is a built-in list of apps with known URL schemes.
-    // Anything else (Camera, Calculator, Clock...): use a Shortcut ("Open App" lists every app) or a custom URL.
-    private static let direct: [CatalogApp] = [
+    // https links here are universal links: they open the app directly. Other third-party apps use their own
+    // scheme, which can only be launched by bouncing through Blank. Camera, Clock etc. need a Shortcut.
+    private static let rawDirect: [(String, String)] = [
         // Apple
         ("Books", "ibooks://"), ("Calendar", "calshow://"), ("Contacts", "contacts://"), ("FaceTime", "facetime:"),
         ("Files", "shareddocuments://"), ("Find My", "findmy://"), ("Fitness", "fitness://"), ("Freeform", "freeform://"),
         ("Health", "x-apple-health://"), ("Home", "x-hm://"), ("Magnifier", "magnifier://"), ("Mail", "message://"),
         ("Maps", "maps://"), ("Measure", "measure://"), ("Messages", "sms:"), ("Music", "music://"),
         ("Notes", "mobilenotes://"), ("Photos", "photos-redirect://"), ("Podcasts", "podcasts://"),
-        ("Reminders", "x-apple-reminderkit://"), ("Safari", "x-web-search://"), ("Settings", "App-Prefs:"),
+        ("Reminders", "x-apple-reminderkit://"), ("Safari", "x-web-search://"), ("Settings", "prefs:"),
         ("Shortcuts", "shortcuts://"), ("Stocks", "stocks://"), ("TV", "videos://"), ("Voice Memos", "voicememos://"),
         ("Wallet", "shoebox://"), ("Weather", "weather://"), ("App Store", "itms-apps://"),
         // Third party
-        ("1Password", "onepassword://"), ("Amazon", "com.amazon.mobile.shopping://"), ("Audible", "audible://"),
+        ("1Password", "onepassword://"), ("Amazon", "https://www.amazon.com/"), ("Audible", "audible://"),
         ("Bitwarden", "bitwarden://"), ("Cash App", "cashme://"), ("ChatGPT", "chatgpt://"), ("Chrome", "googlechrome://"),
-        ("Discord", "discord://"), ("Disney+", "disneyplus://"), ("DoorDash", "doordash://"), ("Dropbox", "dbapi-1://"),
-        ("Duolingo", "duolingo://"), ("Facebook", "fb://"), ("Firefox", "firefox://"), ("Gmail", "googlegmail://"),
-        ("Google Calendar", "googlecalendar://"), ("Google Drive", "googledrive://"), ("Google Maps", "comgooglemaps://"),
+        ("Discord", "https://discord.com/channels/@me"), ("Disney+", "disneyplus://"), ("DoorDash", "doordash://"), ("Dropbox", "dbapi-1://"),
+        ("Duolingo", "duolingo://"), ("Facebook", "https://www.facebook.com/"), ("Firefox", "firefox://"), ("Gmail", "googlegmail://"),
+        ("Google Calendar", "googlecalendar://"), ("Google Drive", "https://drive.google.com/"), ("Google Maps", "comgooglemaps://"),
         ("Google Photos", "googlephotos://"), ("Google Translate", "googletranslate://"), ("Hulu", "hulu://"),
-        ("Instagram", "instagram://"), ("Kindle", "kindle://"), ("LinkedIn", "linkedin://"), ("Lyft", "lyft://"),
-        ("Messenger", "fb-messenger://"), ("Netflix", "nflx://"), ("Notion", "notion://"), ("Outlook", "ms-outlook://"),
-        ("PayPal", "paypal://"), ("Pinterest", "pinterest://"), ("Prime Video", "aiv://"), ("Reddit", "reddit://"),
+        ("Instagram", "https://www.instagram.com/"), ("Kindle", "kindle://"), ("LinkedIn", "https://www.linkedin.com/"), ("Lyft", "lyft://"),
+        ("Messenger", "fb-messenger://"), ("Netflix", "https://www.netflix.com/"), ("Notion", "https://www.notion.so/"), ("Outlook", "ms-outlook://"),
+        ("PayPal", "paypal://"), ("Pinterest", "https://www.pinterest.com/"), ("Prime Video", "aiv://"), ("Reddit", "https://www.reddit.com/"),
         ("Shazam", "shazam://"), ("Signal", "sgnl://"), ("Slack", "slack://"), ("Snapchat", "snapchat://"),
-        ("SoundCloud", "soundcloud://"), ("Spotify", "spotify://"), ("Strava", "strava://"), ("Teams", "msteams://"),
-        ("Telegram", "tg://"), ("Threads", "threads://"), ("TikTok", "tiktok://"), ("Tinder", "tinder://"),
-        ("Twitch", "twitch://"), ("Uber", "uber://"), ("Uber Eats", "ubereats://"), ("Venmo", "venmo://"),
-        ("Waze", "waze://"), ("WhatsApp", "whatsapp://"), ("X", "twitter://"), ("YouTube", "youtube://"),
+        ("SoundCloud", "soundcloud://"), ("Spotify", "https://open.spotify.com/"), ("Strava", "strava://"), ("Teams", "msteams://"),
+        ("Telegram", "tg://"), ("Threads", "https://www.threads.com/"), ("TikTok", "https://www.tiktok.com/"), ("Tinder", "tinder://"),
+        ("Twitch", "https://www.twitch.tv/"), ("Uber", "uber://"), ("Uber Eats", "ubereats://"), ("Venmo", "venmo://"),
+        ("Waze", "waze://"), ("WhatsApp", "whatsapp://"), ("X", "https://x.com/"), ("YouTube", "https://www.youtube.com/"),
         ("YouTube Music", "youtubemusic://"), ("Zoom", "zoomus://"),
-    ].map { CatalogApp(name: $0.0, url: $0.1) }
+    ]
+
+    private static let direct: [CatalogApp] = rawDirect.map { CatalogApp(name: $0.0, url: $0.1) }
 
     // Apple gives these no link at all, so each runs a Shortcut with the "Open App" action, named exactly like the app.
     private static let viaShortcut: [CatalogApp] =
         ["Calculator", "Camera", "Clock", "Phone"].map {
-            CatalogApp(name: $0, url: shortcutURL($0), shortcut: true)
+            CatalogApp(name: $0, url: Catalog.shortcutURL($0), shortcut: true)
         }
 
     static let apps: [CatalogApp] = (direct + viaShortcut).sorted { $0.name < $1.name }
@@ -87,9 +90,9 @@ enum Catalog {
 
     // Schemes handled by the system itself (these open fine through OpenURLIntent).
     static let systemSchemes: Set<String> = [
-        "http", "https", "tel", "mailto", "message", "maps", "music", "facetime", "x-web-search",
+        "http", "https", "prefs", "sms", "tel", "mailto", "message", "maps", "music", "facetime", "x-web-search",
         "photos-redirect", "mobilenotes", "calshow", "x-apple-reminderkit", "shareddocuments", "shoebox",
-        "x-apple-health", "podcasts", "itms-apps", "shortcuts", "app-prefs", "findmy", "ibooks", "videos",
+        "x-apple-health", "podcasts", "itms-apps", "shortcuts", "findmy", "ibooks", "videos",
         "stocks", "x-hm", "fitness", "voicememos", "measure", "magnifier", "freeform", "weather", "contacts",
     ]
 
