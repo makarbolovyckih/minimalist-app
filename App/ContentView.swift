@@ -86,12 +86,22 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $adding) { AddView { items.append($0) } }
+            .onAppear { refreshLinks() }
             .onChange(of: items) { save() }
             .onChange(of: bg) { save() }
             .alert(message ?? "", isPresented: Binding(get: { message != nil }, set: { if !$0 { message = nil } })) {
                 Button("OK", role: .cancel) {}
             }
         }
+    }
+
+    // Keeps saved entries pointing at the newest link for apps from the menu (matched by name).
+    func refreshLinks() {
+        var changed = items
+        for i in changed.indices {
+            if let c = Catalog.apps.first(where: { $0.name == changed[i].name }) { changed[i].url = c.url }
+        }
+        if changed != items { items = changed }
     }
 
     func save() {
